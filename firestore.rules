@@ -1,0 +1,69 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Primitive Definitions
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'shxvedits@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 2. User Rules
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && 
+                      request.resource.data.keys().hasAll(['uid', 'name', 'email', 'role', 'createdAt']) &&
+                      request.resource.data.role == 'patient' &&
+                      request.resource.data.createdAt == request.time;
+      
+      allow update: if isSignedIn() && isValidId(userId) && (
+                      (request.auth.uid == userId && 
+                       request.resource.data.role == resource.data.role &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phoneNumber', 'photoURL', 'age', 'weight'])) ||
+                      isAdmin()
+                    );
+    }
+
+    // 3. Appointment Rules
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && isValidId(appointmentId) && (resource.data.patientId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.patientId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && isValidId(appointmentId) &&
+                      request.resource.data.keys().hasAll(['patientId', 'patientName', 'patientEmail', 'patientPhone', 'doctorId', 'doctorName', 'date', 'time', 'status', 'createdAt']) &&
+                      request.resource.data.patientId == request.auth.uid &&
+                      request.resource.data.status == 'scheduled' &&
+                      request.resource.data.createdAt == request.time;
+      
+      allow update: if isSignedIn() && isValidId(appointmentId) && (
+                      (resource.data.patientId == request.auth.uid && 
+                       request.resource.data.patientId == resource.data.patientId &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'notes', 'date', 'time'])) ||
+                      isAdmin()
+                    );
+      
+      allow delete: if isAdmin() && isValidId(appointmentId);
+    }
+    
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && isValidId(adminId);
+    }
+  }
+}

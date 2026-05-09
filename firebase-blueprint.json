@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Represents a user (patient or admin) in the system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["patient", "admin"] },
+        "phoneNumber": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "age": { "type": "number" },
+        "weight": { "type": "number" },
+        "createdAt": { "type": "object" }
+      },
+      "required": ["uid", "name", "email", "role", "createdAt"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Represents a dental appointment booking.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "patientEmail": { "type": "string", "format": "email" },
+        "patientPhone": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "pending", "confirmed", "cancelled"] },
+        "createdAt": { "type": "object" },
+        "notes": { "type": "string" }
+      },
+      "required": ["patientId", "patientName", "patientEmail", "patientPhone", "doctorId", "doctorName", "date", "time", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles stored by their auth UID."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Dental appointments for patients."
+    }
+  }
+}

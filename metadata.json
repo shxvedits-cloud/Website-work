@@ -1,0 +1,7 @@
+{
+  "name": "Prayag Dental Care",
+  "description": "A warm and professional dental care assistant for Prayag Dental Care, powered by Gemini Live API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
